@@ -28,7 +28,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     profileImage: {
-      type: DataTypes.STRING
+      type: DataTypes.STRING,
+      defaultValue:'public/defauldProfile.jpeg'
     },
     otp: {
       type: DataTypes.STRING,

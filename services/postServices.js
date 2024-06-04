@@ -6,15 +6,19 @@ const fs = require('fs');
 const { number } = require('joi');
 
 const getAllPosts = async (req) => {
+
   const page = Number(req.query.page) || 1;
-  const pageSize = Number(req.query.pageSize) || 10;
+  const pageSize = Number(req.query.pagesize) || 10;
 
   const offset = (page - 1) * pageSize;
   const limit = pageSize;
   const { count, rows } = await Post.findAndCountAll({
+    
     limit: limit,
     offset: offset
+
   });
+
   return ({
     totalItems: count,
     totalPages: Math.ceil(count / pageSize),

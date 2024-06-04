@@ -24,7 +24,7 @@ module.exports = {
       },
       profileImage: {
         type: Sequelize.STRING,
-        defaultValue:'public/defaultProfileInage.jpeg'
+        defaultValue:'public/defauldProfile.jpeg'
       },
       otp: {
         type: Sequelize.STRING,
