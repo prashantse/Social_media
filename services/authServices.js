@@ -207,7 +207,8 @@ const sendOTP = async (email) => {
   }
 }
 
-const changePassword = async (otp, newPassword) => {
+const changePassword = async (req) => {
+  const {otp , newPassword, email} = req.body
   try {
     if (!otp || !newPassword) {
       return res.status(400).json({ success: false, message: 'OTP and new password are required' });
@@ -219,8 +220,13 @@ const changePassword = async (otp, newPassword) => {
     if (newPassword.length <= 7) {
       return res.status(400).json({ success: false, message: 'Password must be at least of 8 characters' });
     }
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!regex.test(email)) {
+      return { success: false, message: "invalid email" };
+    }
 
-    const user = req.user
+
+    const user = await User.findOne({ email: email});
 
     if (!user) {
       throw new Error('Invalid OTP');
