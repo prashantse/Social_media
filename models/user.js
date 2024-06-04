@@ -41,9 +41,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     bio: {
       type: DataTypes.STRING
-    },
-    refreshToken:{
-      type: DataTypes.STRING
     }
   }, {
     sequelize,
