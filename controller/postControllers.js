@@ -4,7 +4,7 @@ const { all } = require('../routes/authRoutes');
 
 const allPosts = async (req, res) => { 
     try {
-      const user = await postService.getAllPosts(req.body);
+      const user = await postService.getAllPosts(req);
       res.status(201).json({ user });
       
     } catch (error) {
