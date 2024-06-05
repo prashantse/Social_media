@@ -4,7 +4,7 @@ const responseMessages = require('../constants/responseMessages');
 
 const getProfile = async (req, res) => { 
     try {
-      const user = await userService.getUserById(req, res);
+      const user = await userService.getUserById(req);
       res.status(201).json({  user });
       
     } catch (error) {

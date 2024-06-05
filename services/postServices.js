@@ -4,6 +4,7 @@ const { Like } = require('../models');
 const path = require('path');
 const fs = require('fs');
 const { number } = require('joi');
+const { where } = require('sequelize');
 
 const getAllPosts = async (req) => {
 
@@ -117,6 +118,7 @@ const deletePostbyId = async (req)=>{
 
 const getAllPostOfAnUser = async (req) => {
   try {
+
     const userId = req.user.id
 
     if (isNaN(userId)) {
@@ -126,23 +128,28 @@ const getAllPostOfAnUser = async (req) => {
       };
     }
 
-    const posts = await Post.findAndCountAll({
-      where: {
-        userId: 40
-      }
+    const page = Number(req.query.page) || 1;
+    const pageSize = Number(req.query.pagesize) || 10;
+  
+    const offset = (page - 1) * pageSize;
+    const limit = pageSize;
+    const { count, rows } = await Post.findAndCountAll({
+      where:{
+        userId: userId
+      },
+      limit: limit,
+      offset: offset
+  
+    });
+  
+    return ({
+      totalItems: count,
+      totalPages: Math.ceil(count / pageSize),
+      currentPage: page,
+      pageSize: pageSize,
+      data: rows
     });
 
-    if (!posts || posts.length === 0) {
-      return {
-        status: 'fail',
-        message: 'Posts not found',
-      };
-    }
-
-    return {
-      status: 'success',
-      data: posts
-    };
 
   } catch (error) {
     console.error('Error fetching posts:', error);

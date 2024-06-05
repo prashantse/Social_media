@@ -10,34 +10,34 @@ const { Op } = require('sequelize');
 
 
 const registerUser = async (req) => {
-  const { username, email, password, bio } = req.body;
-  
-  if(!username || !email || !password){
+  const { username, email, password, bio, firstName, lastName } = req.body;
+
+  if (!username || !email || !password || !firstName) {
     return ({
       status: 'fail',
-      message: "username, email and password are required",
+      message: "username, email, firstName,lastName and password are required",
     });
   }
-  if(username<=5){
+  if (username <= 5 || username >= 30) {
     return ({
       status: 'fail',
-      message: "username should be more than 5 characters",
+      message: "username should be more than 5 characters and less than 30 characters",
     });
   }
-  if(password.length<=7){
+  if (password.length <= 7) {
     return ({
       status: 'fail',
       message: "password should be more than 7 characters",
     });
   }
   const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  if(!regex.test(email)){
+  if (!regex.test(email)) {
     return ({
       status: 'fail',
       message: "invalid email",
     });
   }
-  if(bio && bio.length>100){
+  if (bio && bio.length > 100) {
     return ({
       status: 'fail',
       message: "bio should be less than 100 characters",
@@ -64,7 +64,7 @@ const registerUser = async (req) => {
   let profileImage;
 
   try {
-    if (req.file ) {
+    if (req.file) {
       const mimeType = req.file.mimetype;
       profileImage = req.file.path;
 
@@ -94,6 +94,8 @@ const registerUser = async (req) => {
   const otp = generateOtp();
 
   const user = await User.create({
+    firstName,
+    lastName,
     username,
     email,
     password: hashedPassword,
@@ -104,13 +106,17 @@ const registerUser = async (req) => {
 
   sendOtpEmail(email, otp);
   const userResponse = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    profileImage: user.profileImage,
-    bio: user.bio,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    message: 'User created successfully',
+    data: {
+      id: user.id,
+      username: user.username,
+      fullname: user.firstName + ' ' + user.lastName,
+      email: user.email,
+      profileImage: user.profileImage,
+      bio: user.bio,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }
   }
 
   return userResponse;
@@ -145,9 +151,15 @@ const loginUser = async (req) => {
       throw new Error('Incorrect password.');
     }
   }
-
+  const fullname = user.firstName + ' ' + user.lastName;
   const token = generateToken(user.id);
-  return token;
+  const loginRes={
+    message: `login successful, welcome ${fullname}`,
+    token
+
+  }
+  
+  return loginRes;
 };
 
 
@@ -208,7 +220,7 @@ const sendOTP = async (email) => {
 }
 
 const changePassword = async (req) => {
-  const {otp , newPassword, email} = req.body
+  const { otp, newPassword, email } = req.body
   try {
     if (!otp || !newPassword) {
       return res.status(400).json({ success: false, message: 'OTP and new password are required' });
@@ -226,7 +238,7 @@ const changePassword = async (req) => {
     }
 
 
-    const user = await User.findOne({ email: email});
+    const user = await User.findOne({ email: email });
 
     if (!user) {
       throw new Error('Invalid OTP');

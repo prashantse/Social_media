@@ -22,7 +22,7 @@ const fs = require('fs');
 //     });
 // });
 
-const getUserById = async (req, res) => {
+const getUserById = async (req) => {
     const userProfile = req.user
 
     if (!userProfile) {
@@ -34,6 +34,7 @@ const getUserById = async (req, res) => {
    const profileResponse = {
     id: userProfile.id,
     username: userProfile.username,
+    fullname: userProfile.firstName+' '+userProfile.lastName,
     email: userProfile.email,
     profileImage: userProfile.profileImage,
     bio: userProfile.bio,
@@ -42,14 +43,13 @@ const getUserById = async (req, res) => {
     }
     
     return ({
-        status: 'got user profile ',
+        status: `got ${profileResponse.fullname} profile `,
         data: profileResponse,
     });
 };
 
-
 const updateUser = async (req, res) => {
-    const { username, email, bio } = req.body
+    const { username, email, bio, firstName, lastName } = req.body
     const userProfile = req.user;
 
     if (!userProfile) {
@@ -127,11 +127,30 @@ const updateUser = async (req, res) => {
         }
         userProfile.bio = bio;
     }
+    if (firstName) {
+        if(firstName.length > 20 || firstName.length<=0){
+            return ({
+                status: 'fail',
+                message: 'Firstname must be less than 20 characters or atleast have some value',
+            });
+        }
+        userProfile.firstName = firstName;
+    }
+    if (lastName) {
+        if(lastName.length > 20 || lastName.length<=0){
+            return ({
+                status: 'fail',
+                message: 'Lasttname must be less than 20 characters or atleast have some value',
+            }); 
+        }
+        userProfile.lastName = lastName;
+    }
 
     const updatedResult = await userProfile.save();
     const updateResponse = {
         id: updatedResult.id,
         username: updatedResult.username,
+        fullname: updatedResult.firstName+' '+updatedResult.lastName,
         email: updatedResult.email,
         profileImage: updatedResult.profileImage,
         bio: updatedResult.bio,
@@ -147,6 +166,7 @@ const updateUser = async (req, res) => {
 
 const deleteUserProfile = async(req , res , next) => {
     const  userProfile  = req.user;
+    const fullname = req.user.firstName+' '+req.user.lastName;
 
     if (!userProfile) {
         return res.json({
@@ -159,7 +179,7 @@ const deleteUserProfile = async(req , res , next) => {
 
     return {
         status:'success',
-        message: 'User deleted successfully',
+        message: `User(${fullname}) deleted successfully`,
     };
 
 };
@@ -168,6 +188,7 @@ const deleteUserProfile = async(req , res , next) => {
 const getAllCommentsOfUser = async (req) => {
     try {
         const userId = req.user.id
+        const fullname = req.user.firstName+' '+req.user.lastName;
         if (isNaN(userId)) {
             return {
                 status: 'fail',
@@ -188,7 +209,7 @@ const getAllCommentsOfUser = async (req) => {
            }
         }
         return ({
-            status: 'got user comments ',
+            status: `got ${fullname} comments `,
             data: comments,
         });
     } catch (err) {
@@ -201,7 +222,8 @@ const getAllCommentsOfUser = async (req) => {
 
 const getAllLikesOfUser= async(req)=>{
     try {
-       const userId = req.user.id
+       const userId = req.user.id;
+       const fullname = req.user.firstName+' '+req.user.lastName;
         if (!userId) {
             return {
                 status: 'fail',
@@ -223,7 +245,7 @@ const getAllLikesOfUser= async(req)=>{
            }
         }
         return ({
-            status: 'got user likes ',
+            status: `got ${fullname}'s all likes `,
             data: likes,
         });
     } catch (err) {

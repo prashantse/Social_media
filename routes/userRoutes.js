@@ -12,7 +12,7 @@ router.route('/updateProfile').patch(
 router.route('/allLikesOfUser').get(verifyToken, allLikesOfUser);
 router.route('/allCommentsOfUser').get(verifyToken,allCommentsOfUser);
 router.route('/deleteProfile').delete(verifyToken,deleteProfile);
-router.route('/:id').get(verifyToken ,getProfile);
+router.route('/getProfile').get(verifyToken ,getProfile);
 
 
 module.exports = router;

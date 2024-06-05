@@ -10,6 +10,7 @@ const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const likeRoutes = require('./routes/likeRoutes');
+const productRoutes = require('./routes/productRoutes');
 // const shareRoutes = require('./routes/shareRoutes');
 
 const app = express();
@@ -23,9 +24,9 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/likes', likeRoutes);
 app.use('/api/v1/comments', commentRoutes);
+app.use('/api/v1/products', productRoutes);
 
  
-
 
 sequelize.sync()
   .then(() => {
