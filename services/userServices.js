@@ -7,20 +7,15 @@ const path = require('path');
 const fs = require('fs');
 
 
-// const getAllUser = catchAsync(async (req, res, next) => {
-//     const users = await user.findAndCountAll({
-//         where: {
-//             userType: {
-//                 [Sequelize.Op.ne]: '0',
-//             },
-//         },
-//         attributes: { exclude: ['password'] },
-//     });
-//     return res.status(200).json({
-//         status: 'success',
-//         data: users,
-//     });
-// });
+const getAllUser = async (req, res, next) => {
+    const users = await User.findAndCountAll({
+        attributes: { exclude: ['password'] },
+    });
+    return ({
+        status: 'success',
+        data: users,
+    });
+};
 
 const getUserById = async (req) => {
     const userProfile = req.user
@@ -48,12 +43,12 @@ const getUserById = async (req) => {
     });
 };
 
-const updateUser = async (req, res) => {
+const updateUser = async (req) => {
     const { username, email, bio, firstName, lastName } = req.body
     const userProfile = req.user;
 
     if (!userProfile) {
-        return res.status(404).json({
+        return ({
             status: 'fail',
             message: 'User not found',
         });
@@ -98,11 +93,12 @@ const updateUser = async (req, res) => {
     }
 
     if (username) {
-        if(username.length < 5) {
-            return ({
-                status: 'fail',
-                message: 'Username must be at least of 5 characters',
-            });
+        const userRegex = /^[0-9A-Za-z]{6,16}$/
+        if(!userRegex.test(username)){
+          return ({
+            status: 'fail',
+            message: "username should contain only alphanumeric characters and must be of 6 to 16 characters (Not even a space)",
+          });
         }
         userProfile.username = username;
     }
@@ -256,10 +252,41 @@ const getAllLikesOfUser= async(req)=>{
     }
 }
 
+const getUserWithId = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const userProfile = await User.findOne({
+            where: {
+                id: userId,
+            },
+            attributes: { exclude: ['password'] },
+        });
+
+        if (!userProfile) {
+            return ({
+                status: 'fail',
+                message: 'User not found',
+            });
+        }
+
+        return ({
+            status: 'success',
+            data: userProfile,
+        });
+    } catch (err) {
+        return ({
+            status: 'fail',
+            message: 'Internal server error',
+        });
+    }
+}
+
 module.exports = {
+    getAllUser,
     updateUser,
     getUserById,
     getAllCommentsOfUser,
     getAllLikesOfUser,
-    deleteUserProfile
+    deleteUserProfile,
+    getUserWithId
 };

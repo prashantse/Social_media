@@ -21,6 +21,15 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
+      brandId:{
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'Brands',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
       price: {
         type: Sequelize.FLOAT
       },

@@ -15,10 +15,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    contentType: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
     mediaUrl: {
        type: DataTypes.STRING,
       allowNull: false

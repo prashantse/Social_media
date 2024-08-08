@@ -1,38 +1,69 @@
 const { Post } = require('../models');
 const { Comment } = require('../models');
 const { Like } = require('../models');
-const path = require('path');
+const { User } = require('../models');
+// const path = require('path');
+const sequelize = require('sequelize');
 const fs = require('fs');
 const { number } = require('joi');
 const { where } = require('sequelize');
+const { uploadOnCloudinary} = require('../utils/cloudinary');
+const { group } = require('console');
 
 const getAllPosts = async (req) => {
-
   const page = Number(req.query.page) || 1;
-  const pageSize = Number(req.query.pagesize) || 10;
+  const pageSize = Number(req.query.pageSize) || 10;
 
   const offset = (page - 1) * pageSize;
   const limit = pageSize;
-  const { count, rows } = await Post.findAndCountAll({
-    
-    limit: limit,
-    offset: offset
 
-  });
-
-  return ({
-    totalItems: count,
-    totalPages: Math.ceil(count / pageSize),
-    currentPage: page,
-    pageSize: pageSize,
-    data: rows
-  });
-
+  try {
+    const { count, rows } = await Post.findAndCountAll({
+      attributes: {
+        include: [
+          [sequelize.fn('COUNT', sequelize.col('Likes.id')), 'likesCount']
+        ]
+      },
+      include: [
+        {
+          model: Like,
+          attributes: [],
+        },
+        {
+          model: User,
+          attributes: ['id', 'username', 'profileImage'],
+        }
+      ],
+      group: [
+        'Post.id',
+        'User.id',
+        'User.username',
+        'User.profileImage'
+      ],
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']],
+      subQuery: false,
+    });
+    return {
+      data: rows,
+      meta: {
+        totalItems: count.length,
+        totalPages: Math.ceil(count.length / pageSize),
+        currentPage: page,
+        pageSize: pageSize
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching posts with pagination:', error);
+    throw error; 
+  }
 };
+
 
 const createNewPost = async (req) => {
   const userId=req.user.id;
-  const { title, contentType } = req.body
+  const { title } = req.body
   const mediaUrl= req.file
 
   if (!mediaUrl ){
@@ -56,10 +87,11 @@ const createNewPost = async (req) => {
         
     }
 
+    const secure_url= await uploadOnCloudinary(mediaPath)
+
    const post = await Post.create({
         title,
-        contentType,
-        mediaUrl: mediaPath,
+        mediaUrl: secure_url,
         userId
       });
 
@@ -133,6 +165,7 @@ const getAllPostOfAnUser = async (req) => {
   
     const offset = (page - 1) * pageSize;
     const limit = pageSize;
+    
     const { count, rows } = await Post.findAndCountAll({
       where:{
         userId: userId
@@ -171,13 +204,18 @@ const getAllCommentsOnPost = async (req) => {
       };
     }
 
-    const comments = await Comment.findAndCountAll({
-      where: {
-        postId: postId
-      }
+    const comments = await Comment.findAll({
+      where: { postId },
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'username', 'profileImage'],
+        }
+      ],
+      order: [['createdAt', 'DESC']]
     });
 
-    if (!comments || comments.count == 0) {
+    if (!comments || comments.length === 0) {
       return {
         status: 'fail',
         message: 'Comments not found',
@@ -185,8 +223,8 @@ const getAllCommentsOnPost = async (req) => {
     }
 
     return {
-      status:'success',
-      data: comments
+      status: 'success',
+      data: comments,
     };
 
   } catch (error) {
@@ -196,7 +234,8 @@ const getAllCommentsOnPost = async (req) => {
       message: 'An error occurred while fetching comments'
     };
   }
-}
+};
+
 
 
 const getAllLikesOnPost = async (req) => {
@@ -236,6 +275,45 @@ const getAllLikesOnPost = async (req) => {
   }
 }
 
+const getPostsOfUser = async (req) => {
+  try {
+    const userId = req.params.userId;
+
+    if (isNaN(userId)) {
+      return {
+        status: 'fail',
+        message: 'Invalid user ID',
+      };
+    }
+
+    const posts = await Post.findAll({
+      where: {
+        userId: userId
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!posts || posts.length === 0) {
+      return {
+        status: 'fail',
+        message: 'Posts not found',
+      };
+    }
+
+    return {
+      status:'success',
+      data: posts,
+    };
+
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return {
+      status: 'error',
+      message: 'An error occurred while fetching posts'
+    };
+  }
+}
+
 
 module.exports = {
   getAllPosts,
@@ -244,5 +322,6 @@ module.exports = {
   deletePostbyId,
   getAllPostOfAnUser,
   getAllCommentsOnPost,
-  getAllLikesOnPost
+  getAllLikesOnPost,
+  getPostsOfUser
 };

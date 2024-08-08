@@ -1,11 +1,18 @@
 const userService = require('../services/userServices');
 const responseMessages = require('../constants/responseMessages');
 
-
+const getAllUser = async(req, res) =>{
+  try {
+    const users = await userService.getAllUser();
+    res.status(200).json({ users });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+}
 const getProfile = async (req, res) => { 
     try {
       const user = await userService.getUserById(req);
-      res.status(201).json({  user });
+      res.status(200).json({  user });
       
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -36,7 +43,7 @@ const getProfile = async (req, res) => {
  const  allCommentsOfUser = async (req, res) => {
   try {
     const comments = await userService.getAllCommentsOfUser(req);
-    res.status(201).json({  comments });
+    res.status(200).json({  comments });
     
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -46,16 +53,29 @@ const getProfile = async (req, res) => {
  const  allLikesOfUser = async (req, res) => {
   try {
     const likes = await userService.getAllLikesOfUser(req);
-    res.status(201).json({  likes });
+    res.status(200).json({  likes });
     
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
  }
 
-module.exports = { getProfile ,
+ const getUser = async (req, res) => {
+  try {
+    const user = await userService.getUserWithId(req);
+    res.status(200).json({  user });
+    
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+ }
+
+module.exports = {
+    getProfile ,
     updateProfile,
     allCommentsOfUser,
     allLikesOfUser,
-    deleteProfile
+    deleteProfile,
+    getAllUser,
+    getUser,
   }

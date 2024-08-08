@@ -11,14 +11,29 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Product.belongsTo(models.User, {
-        foreignKey: 'userId'
+        foreignKey: 'sellerId'
       });
-      Product.belongsTo(models.Category, { foreignKey: 'categoryId' });
+      Product.belongsTo(models.Brand, {
+        foreignKey: 'brandId'
+      });
+      Product.belongsTo(models.Category, {
+        foreignKey: 'categoryId'
+      });
+      Product.belongsTo(models.ProductVariant, {
+        foreignKey: 'variantId'
+      });
     }
   }
   Product.init({
     name: DataTypes.STRING,
-    sellerId:{
+    variantId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'ProductVariants',
+        key: 'id',
+      },
+    },
+    sellerId: {
       type: DataTypes.INTEGER,
       references: {
         model: 'Users',
@@ -27,15 +42,34 @@ module.exports = (sequelize, DataTypes) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',
     },
+    brandId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Brands',
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
+
+    },
+    categoryId: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Categories',
+        key: 'id',
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE',
+    },
     price: {
-      type:DataTypes.FLOAT,
+      type: DataTypes.FLOAT,
       validate: {
         min: 0
       },
       allowNull: false
     },
-    imageOrVideoPath: DataTypes.STRING,
-    categoryId:{
+    productsImagesAndVideos: DataTypes.ARRAY(DataTypes.STRING),
+    categoryId: {
       type: DataTypes.INTEGER,
       references: {
         model: 'Categories',

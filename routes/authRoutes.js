@@ -5,9 +5,9 @@ const router = express.Router();
 const { upload } = require('../config/multerConfig')
 
 router.route("/register").post(
-    upload.single('profileImage'),
+    upload("profileImages").single('profileImage'),
     authController.register
-)
+);
 router.post('/login', authController.login);
 router.post('/verify-otp', authController.verifyOtp);
 router.post('/updatePassword', authController.updatePassword);

@@ -5,7 +5,7 @@ const { all } = require('../routes/authRoutes');
 const allPosts = async (req, res) => { 
     try {
       const posts = await postService.getAllPosts(req);
-      res.status(201).json({ posts });
+      res.status(200).json({ posts });
       
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -25,7 +25,7 @@ const allPosts = async (req, res) => {
   const getPost = async (req, res) => {
     try {
       const post = await postService.getPostbyId(req);
-      res.status(201).json({ post });
+      res.status(200).json({ post });
       
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -47,7 +47,7 @@ const allPosts = async (req, res) => {
   const PostOfAnUser = async (req,res) => {
     try {
       const posts = await postService.getAllPostOfAnUser(req);
-      res.status(201).json({ posts});
+      res.status(200).json({ posts});
       
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -58,7 +58,7 @@ const allPosts = async (req, res) => {
   const allCommentsOnPost = async (req,res) => {
     try {
       const comments = await postService.getAllCommentsOnPost(req);
-      res.status(201).json({ comments});
+      res.status(200).json({ comments});
       
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -68,7 +68,17 @@ const allPosts = async (req, res) => {
   const allLikesOnPost = async (req,res) => {
     try {
       const likes = await postService.getAllLikesOnPost(req);
-      res.status(201).json({ likes});
+      res.status(200).json({ likes});
+      
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  const getPostsOfUser = async (req,res) => {
+    try {
+      const posts = await postService.getPostsOfUser(req);
+      res.status(200).json({ posts});
       
     } catch (error) {
       res.status(400).json({ error: error.message });
@@ -82,5 +92,6 @@ const allPosts = async (req, res) => {
     deletePost,
     PostOfAnUser,
     allCommentsOnPost,
-    allLikesOnPost
+    allLikesOnPost,
+    getPostsOfUser
   }

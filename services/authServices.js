@@ -7,37 +7,76 @@ const { generateToken } = require('../utils/tokenUtils');
 const path = require('path');
 const fs = require('fs');
 const { Op } = require('sequelize');
+const {uploadOnCloudinary} = require('../utils/cloudinary');
+const { promises } = require('dns');
 
 
 const registerUser = async (req) => {
   const { username, email, password, bio, firstName, lastName } = req.body;
+  let profileImage;
+
+  try {
+    if (req.file) {
+      const mimeType = req.file.mimetype;
+      profileImage = req.file.path;
+
+      if (!mimeType.startsWith('image/')) {
+        fs.unlinkSync(profileImage)
+        return ({
+          status: 'fail',
+          message: 'Only image files are allowed',
+        });
+      }
+
+    }
+  } catch (err) {
+    if (fs.existsSync(profileImage)) {
+      fs.unlinkSync(profileImage);
+    }
+
+    return {
+      status: 'fail',
+      message: 'Internal server error' + err.message,
+    }
+
+  }
 
   if (!username || !email || !password || !firstName) {
+    fs.unlinkSync(profileImage);
     return ({
       status: 'fail',
       message: "username, email, firstName,lastName and password are required",
     });
   }
-  if (username <= 5 || username >= 30) {
+
+  const userRegex = /^[0-9A-Za-z]{6,16}$/
+  if (!userRegex.test(username)) {
+    fs.unlinkSync(profileImage);
     return ({
       status: 'fail',
-      message: "username should be more than 5 characters and less than 30 characters",
+      message: "username should contain only alphanumeric characters and must be of 6 to 16 characters (Not even a space)",
     });
   }
-  if (password.length <= 7) {
+
+
+  const pasRegex = /^(?=.*?[0-9])(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[^0-9A-Za-z]).{8,32}$/;
+  if (!pasRegex.test(password)) {
+    fs.unlinkSync(profileImage);
     return ({
       status: 'fail',
-      message: "password should be more than 7 characters",
+      message: "password should contain at least one number, one special character, one uppercase letter and one letter. The length must be in between 8 to 32",
     });
   }
   const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
   if (!regex.test(email)) {
+    fs.unlinkSync(profileImage);
     return ({
       status: 'fail',
       message: "invalid email",
     });
   }
   if (bio && bio.length > 100) {
+    fs.unlinkSync(profileImage);
     return ({
       status: 'fail',
       message: "bio should be less than 100 characters",
@@ -54,44 +93,19 @@ const registerUser = async (req) => {
   });
 
   if (existedUser) {
+    fs.unlinkSync(profileImage);
     return ({
       status: 'fail',
       message: "username or email already exists",
     });
   }
 
-
-  let profileImage;
-
-  try {
-    if (req.file) {
-      const mimeType = req.file.mimetype;
-      profileImage = req.file.path;
-
-      if (!mimeType.startsWith('image/')) {
-        fs.unlinkSync(profileImage)
-        return ({
-          status: 'fail',
-          message: 'Only image files are allowed',
-        });
-      }
-
-
-    }
-  } catch (err) {
-    if (fs.existsSync(profileImage)) {
-      fs.unlinkSync(profileImage);
-    }
-
-    return {
-      status: 'fail',
-      message: 'Internal server error' + err.message,
-    }
-
-  }
-
   const hashedPassword = await bcrypt.hash(password, 10);
   const otp = generateOtp();
+
+ const secure_url= await uploadOnCloudinary(profileImage)
+ console.log(secure_url); 
+ 
 
   const user = await User.create({
     firstName,
@@ -99,12 +113,13 @@ const registerUser = async (req) => {
     username,
     email,
     password: hashedPassword,
-    profileImage: profileImage || "public/defaultProfile.jpeg",
+    profileImage: secure_url || "public/defaultProfile.jpeg",
     otp,
     bio
   });
 
   sendOtpEmail(email, otp);
+
   const userResponse = {
     message: 'User created successfully',
     data: {
@@ -129,16 +144,24 @@ const loginUser = async (req) => {
   const user = await User.findOne({ where: { email } });
 
   if (!user) {
-    throw new Error('User not found.');
+    return {
+        statusCode: 404,
+        message: 'User not found',
+      }
   }
-
 
   if (user.firstTimeLogin) {
     if (!otp) {
-      throw new Error('OTP not found');
+      return {
+        statusCode: 404,
+        message: 'user not found'
+      }
     }
     if (otp !== user.otp) {
-      throw new Error('Invalid OTP.');
+      return {
+        statusCode: 404,
+        message: 'OTP not found'
+      }
     }
 
     user.otp = null;
@@ -148,17 +171,21 @@ const loginUser = async (req) => {
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Incorrect password.');
+      return {
+        statusCode: 400,
+        message: 'Password incorrect'
+      }
     }
   }
   const fullname = user.firstName + ' ' + user.lastName;
   const token = generateToken(user.id);
-  const loginRes={
+  const loginRes = {
+    statusCode: 200,
     message: `login successful, welcome ${fullname}`,
     token
 
   }
-  
+
   return loginRes;
 };
 
@@ -178,6 +205,18 @@ const verifyOtp = async (email, otp) => {
 
 const updateuserPassword = async (email, oldPassword, newPassword) => {
   try {
+    if (!email || !oldPassword || !newPassword) {
+      throw new Error("email, oldPassword and newPassword are required");
+    }
+
+    const pasRegex = /^(?=.*?[0-9])(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[^0-9A-Za-z]).{8,32}$/;
+    if (!pasRegex.test(password)) {
+      return ({
+        status: 'fail',
+        message: "password should contain at least one number, one special character, one uppercase letter and one letter. The length must be in between 8 to 32",
+      });
+    }
+
     const user = await User.findOne({ where: { email } });
     if (!user) {
       throw new Error("Couldn't find the user in the database");
@@ -229,14 +268,17 @@ const changePassword = async (req) => {
       return res.status(400).json({ success: false, message: 'OTP must be of 6 digits' });
     }
 
-    if (newPassword.length <= 7) {
-      return res.status(400).json({ success: false, message: 'Password must be at least of 8 characters' });
+    const pasRegex = /^(?=.*?[0-9])(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[^0-9A-Za-z]).{8,32}$/;
+    if (!pasRegex.test(newPassword)) {
+      return ({
+        status: 'fail',
+        message: "password should contain at least one number, one special character, one uppercase letter and one letter. The length must be in between 8 to 32",
+      });
     }
     const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     if (!regex.test(email)) {
       return { success: false, message: "invalid email" };
     }
-
 
     const user = await User.findOne({ email: email });
 
